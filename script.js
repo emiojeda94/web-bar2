@@ -1,114 +1,13 @@
-const menuToggle = document.querySelector('.menu-toggle');
-const navigationLinks = document.querySelector('#navigation-links');
-if (menuToggle && navigationLinks) {
-  function closeMenu() {
-    navigationLinks.classList.remove('is-open');
-    menuToggle.setAttribute('aria-expanded', 'false');
-  }
-  menuToggle.addEventListener('click', () => {
-    const isOpen = navigationLinks.classList.toggle('is-open');
-    menuToggle.setAttribute('aria-expanded', String(isOpen));
-  });
-  navigationLinks.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && navigationLinks.classList.contains('is-open')) {
-      closeMenu();
-      menuToggle.focus();
-    }
-  });
-  window.matchMedia('(min-width: 761px)').addEventListener('change', closeMenu);
-}
+try{const t=localStorage.getItem("raiz-theme");document.documentElement.dataset.theme=t==="dark"||t==="light"?t:window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch{}
+document.addEventListener("DOMContentLoaded",()=>{
 
-const servicesTrack = document.querySelector('#services-track');
-const servicesPrev = document.querySelector('#services-prev');
-const servicesNext = document.querySelector('#services-next');
-const servicesStatus = document.querySelector('.carousel-status');
 
-if (servicesTrack && servicesPrev && servicesNext && servicesStatus) {
-  const cards = [...servicesTrack.querySelectorAll('.service-card')];
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const mobileCarousel = window.matchMedia('(max-width: 760px)');
+const themeToggle=document.querySelector('#theme-toggle');let savedTheme;try{savedTheme=localStorage.getItem('raiz-theme')}catch{}const systemTheme=window.matchMedia('(prefers-color-scheme: dark)');function applyTheme(theme){const dark=theme==='dark';document.documentElement.dataset.theme=theme;themeToggle.setAttribute('aria-pressed',String(dark));themeToggle.setAttribute('aria-label',dark?'Activar modo claro':'Activar modo oscuro');themeToggle.innerHTML=(dark?'☀':'☾')+' <span>'+(dark?'Modo claro':'Modo oscuro')+'</span>'}applyTheme(savedTheme==='dark'||savedTheme==='light'?savedTheme:systemTheme.matches?'dark':'light');themeToggle.addEventListener('click',()=>{savedTheme=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(savedTheme);try{localStorage.setItem('raiz-theme',savedTheme)}catch{}});systemTheme.addEventListener('change',e=>{if(!savedTheme)applyTheme(e.matches?'dark':'light')});
 
-  function updateCarousel() {
-    if (!mobileCarousel.matches) {
-      servicesPrev.disabled = true;
-      servicesNext.disabled = true;
-      servicesStatus.textContent = '';
-      return;
-    }
-    const maxScroll = servicesTrack.scrollWidth - servicesTrack.clientWidth;
-    servicesPrev.disabled = servicesTrack.scrollLeft <= 2;
-    servicesNext.disabled = servicesTrack.scrollLeft >= maxScroll - 2;
-    const viewport = servicesTrack.getBoundingClientRect();
-    const visible = cards.map((card, index) => ({ rect: card.getBoundingClientRect(), index }))
-      .filter(({ rect }) => rect.left >= viewport.left - 2 && rect.right <= viewport.right + 2);
-    if (visible.length) {
-      const first = visible[0].index + 1;
-      const last = visible[visible.length - 1].index + 1;
-      servicesStatus.textContent = `${first === last ? first : `${first}–${last}`} / ${cards.length}`;
-    }
-  }
+const carousel=document.querySelector('#service-carousel');const prevCut=document.querySelector('#previous-cut');const nextCut=document.querySelector('#next-cut');const cutPosition=document.querySelector('#cut-position');function currentCut(){return Math.round(carousel.scrollLeft/carousel.clientWidth)}function updateCut(){const index=currentCut();cutPosition.textContent=(index+1)+' / 4';prevCut.disabled=index===0;nextCut.disabled=index===3}function moveCut(direction){const index=Math.max(0,Math.min(3,currentCut()+direction));carousel.scrollTo({left:index*carousel.clientWidth,behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'})}prevCut.onclick=()=>moveCut(-1);nextCut.onclick=()=>moveCut(1);carousel.addEventListener('scroll',updateCut,{passive:true});carousel.addEventListener('keydown',e=>{if(window.matchMedia('(max-width:620px)').matches&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();moveCut(e.key==='ArrowRight'?1:-1)}});window.addEventListener('resize',updateCut);updateCut();
 
-  function moveCarousel(direction) {
-    if (!mobileCarousel.matches) return;
-    const gap = parseFloat(getComputedStyle(servicesTrack).columnGap) || 0;
-    const step = cards[0].getBoundingClientRect().width + gap;
-    servicesTrack.scrollBy({ left: direction * step, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
-  }
+const menuToggle=document.querySelector('.menu-toggle');const mainNav=document.querySelector('#main-nav');const mobileNav=window.matchMedia('(max-width:620px)');function closeMenu(restoreFocus=false){mainNav.classList.remove('is-open');menuToggle.setAttribute('aria-expanded','false');menuToggle.setAttribute('aria-label','Abrir menú');if(restoreFocus)menuToggle.focus()}menuToggle.addEventListener('click',()=>{const open=menuToggle.getAttribute('aria-expanded')!=='true';mainNav.classList.toggle('is-open',open);menuToggle.setAttribute('aria-expanded',String(open));menuToggle.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú')});mainNav.addEventListener('click',e=>{if(e.target.closest('a,button'))closeMenu()});document.addEventListener('click',e=>{if(!e.target.closest('header'))closeMenu()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menuToggle.getAttribute('aria-expanded')==='true')closeMenu(true)});document.addEventListener('focusin',e=>{if(!e.target.closest('header'))closeMenu()});mobileNav.addEventListener('change',()=>closeMenu());
 
-  servicesPrev.addEventListener('click', () => moveCarousel(-1));
-  servicesNext.addEventListener('click', () => moveCarousel(1));
-  servicesTrack.addEventListener('scroll', updateCarousel, { passive: true });
-  servicesTrack.addEventListener('keydown', event => {
-    // Las flechas controlan el carrusel cuando su área tiene el foco.
-    if (event.target !== servicesTrack || !mobileCarousel.matches) return;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-      event.preventDefault();
-      moveCarousel(event.key === 'ArrowRight' ? 1 : -1);
-    }
-  });
-  new ResizeObserver(updateCarousel).observe(servicesTrack);
-  document.fonts.ready.then(updateCarousel);
-  function configureCarousel() {
-    if (mobileCarousel.matches) {
-      servicesTrack.setAttribute('tabindex', '0');
-      servicesTrack.setAttribute('aria-roledescription', 'carrusel');
-      servicesTrack.setAttribute('aria-label', 'Servicios: usá las flechas o deslizá para explorar');
-    } else {
-      servicesTrack.removeAttribute('tabindex');
-      servicesTrack.removeAttribute('aria-roledescription');
-      servicesTrack.setAttribute('aria-label', 'Servicios');
-      servicesTrack.scrollLeft = 0;
-    }
-    updateCarousel();
-  }
-  mobileCarousel.addEventListener('change', configureCarousel);
-  configureCarousel();
-}
+const booking=document.querySelector('#booking');document.querySelectorAll('[data-book]').forEach(b=>b.addEventListener('click',()=>{document.querySelector('#result').style.display='none';if(b.dataset.book)document.querySelector('#service').value=b.dataset.book;booking.showModal()}));document.querySelectorAll('dialog .close').forEach(b=>b.onclick=()=>b.closest('dialog').close());document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}}));const now=new Date();const localToday=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');document.querySelector('#date').min=localToday;document.querySelector('#booking-form').onsubmit=e=>{e.preventDefault();const date=document.querySelector('#date');if(new Date(date.value+'T12:00:00').getDay()===0){date.setCustomValidity('Elegí un día de lunes a sábado.');date.reportValidity();return}const result=document.querySelector('#result');result.textContent=document.querySelector('#name').value+', elegiste '+document.querySelector('#service').value.toLowerCase()+' para el '+new Date(date.value+'T12:00:00').toLocaleDateString('es-UY')+' a las '+document.querySelector('#time').value+'. Esta selección es de demostración; el turno no está reservado.';result.style.display='block';};document.querySelector('#date').oninput=e=>e.target.setCustomValidity('');document.querySelector('#contact-button').onclick=()=>{document.querySelector('#product-info').close();location.hash='contacto'};
 
-// El contenido permanece visible si no hay soporte o se solicita reducir movimiento.
-const pageMotionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-if ('IntersectionObserver' in window && !pageMotionPreference.matches) {
-  const revealBlocks = document.querySelectorAll(
-    '.hero-content, .services-heading, .hours-heading, .hours-details, .contact-copy, .contact-channels'
-  );
-  const revealObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: .12 });
-  revealBlocks.forEach(block => {
-    block.classList.add('scroll-reveal');
-    revealObserver.observe(block);
-  });
-  document.addEventListener('focusin', event => {
-    const block = event.target.closest('.scroll-reveal');
-    if (block) {
-      block.classList.add('is-visible');
-      revealObserver.unobserve(block);
-    }
-  });
-}
+});
