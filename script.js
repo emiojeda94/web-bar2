@@ -1,3 +1,27 @@
+// El botón alterna el tema y conserva la elección en este navegador.
+const themeToggle = document.querySelector('.theme-toggle');
+if (themeToggle) {
+  const themeLabel = themeToggle.querySelector('.theme-toggle-label');
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    const action = theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro';
+    themeToggle.setAttribute('aria-label', action);
+    themeToggle.setAttribute('title', action);
+    themeLabel.textContent = theme === 'dark' ? 'Modo claro' : 'Modo oscuro';
+  }
+  applyTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+  themeToggle.addEventListener('click', () => {
+    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+    try { localStorage.setItem('face-color-theme', nextTheme); } catch (_) {}
+  });
+  window.addEventListener('storage', event => {
+    if (event.key === 'face-color-theme' || event.key === null) {
+      applyTheme(event.newValue === 'light' ? 'light' : 'dark');
+    }
+  });
+}
+
 const menuToggle = document.querySelector('.menu-toggle');
 const navigationLinks = document.querySelector('#navigation-links');
 if (menuToggle && navigationLinks) {
